@@ -1457,49 +1457,38 @@ class Exchange {
     }
 
     public function load_markets($reload = false, $params = array()) {
-            if (!$reload && $this->markets) {
-                if (!$this->markets_by_id) {
-                    return $this->set_markets($this->markets);
-                }
-                return $this->markets;
+
+        if (!$reload && $this->markets) {
+            if (!$this->markets_by_id) {
+                return $this->set_markets($this->markets);
             }
-    
-            /**
-             * @desc MODOS - cache
-             */
-            $cache = new \App\Lib\CacheLib('ccxt_'. $this->id . '_load_markets');
-    
-            if($reload){
-                $cache->forget();
+            return $this->markets;
+        }
+
+        /**
+         * @desc MODOS - cache
+         */
+        $cache = new \App\Lib\CacheCcxtLib( $this->id, __METHOD__);
+
+        if($reload){
+            $cache->forget();
+        }
+
+        if($cache->has()) {
+            $data = $this->set_markets($cache->get());
+        } else {
+
+            $currencies = null;
+            if (array_key_exists('fetchCurrencies', $this->has) && $this->has['fetchCurrencies']) {
+                $currencies = $this->fetch_currencies();
             }
-    
-            if($cache->has()) {
-                $data = $this->set_markets($cache->get());
-            } else {
-    
-                $currencies = null;
-                if (array_key_exists('fetchCurrencies', $this->has) && $this->has['fetchCurrencies']) {
-                    $currencies = $this->fetch_currencies();
-                }
-                $markets = $this->fetch_markets($params);
-                $data = $this->set_markets($markets, $currencies);
-    
-                $cache->store($data);
-            }
-    
+            $markets = $this->fetch_markets($params);
+            $data = $this->set_markets($markets, $currencies);
+
+            $cache->store($data);
+        }
+
         return $data;
-        // if (!$reload && $this->markets) {
-        //     if (!$this->markets_by_id) {
-        //         return $this->set_markets($this->markets);
-        //     }
-        //     return $this->markets;
-        // }
-        // $currencies = null;
-        // if (array_key_exists('fetchCurrencies', $this->has) && $this->has['fetchCurrencies']) {
-        //     $currencies = $this->fetch_currencies();
-        // }
-        // $markets = $this->fetch_markets($params);
-        // return $this->set_markets($markets, $currencies);
     }
 
     public function loadAccounts($reload = false, $params = array()) {
