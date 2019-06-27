@@ -24,6 +24,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+Yossef moshe partouche : search for `MODOS`  string to see changes
+
 */
 
 //-----------------------------------------------------------------------------
@@ -53,6 +55,8 @@ class Exchange {
 
     const VERSION = '1.18.838';
 
+    // MODOS
+    public $verbose; // rendre cet attribute accessible depuis une instance
     public static $eth_units = array (
         'wei'        => '1',
         'kwei'       => '1000',
@@ -1258,7 +1262,49 @@ class Exchange {
             curl_setopt_array($this->curl, $this->curl_options);
         }
 
+         /**
+         * *********************************************************************
+         * @desc MODOS api_log_external MANAGER
+         * *********************************************************************
+         */
+        $apiLogExternalModelId = null;
+        $apiLogExternalLib  = new \App\Lib\ApiLogExternalLib();
+
+        if($apiLogExternalLib->isNotException($url)){
+
+            $obj                    = new \stdClass();
+            $obj->userId            = getAuthUserId();
+            $obj->scheme            = parse_url($url)['scheme'];
+            $obj->baseUrl           = parse_url($url)['host'];
+            $obj->uri               = $url;
+            $obj->method            = !empty($method) ? $method : '';
+            $obj->request           = !empty($body) ? json_encode($body) : '';
+            $apiLogExternalModel    = $apiLogExternalLib->insertAtStart($obj);
+            $apiLogExternalModelId  = (!empty($apiLogExternalModel) && isset($apiLogExternalModel->id)) ? $apiLogExternalModel->id : null;
+        }
+
+        /**
+         * *********************************************************************
+         * @desc FIN MODOS
+         * *********************************************************************
+         */
+
         $result = curl_exec($this->curl);
+
+        /**
+         * *********************************************************************
+         * @desc  MODOS  api_log_external MANAGER
+         * *********************************************************************
+         */
+        if($apiLogExternalModelId){
+            $myResponse             = is_json($result) ? $result : json_encode($result);
+            $apiLogExternalLib->updateAtFinish($apiLogExternalModelId, $myResponse, curl_getinfo($this->curl, CURLINFO_HTTP_CODE), $apiLogExternalModel);
+        }
+        /**
+         * *********************************************************************
+         * @desc FIN MODOS
+         * *********************************************************************
+         */
 
         $this->lastRestRequestTimestamp = $this->milliseconds();
 
